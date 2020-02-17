@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 public class Upload extends HttpServlet {
+
     public static final String VUE = "/WEB-INF/upload.jsp";
 
     public static final String CHAMP_DESCRIPTION = "description";
@@ -25,8 +26,7 @@ public class Upload extends HttpServlet {
         String description = request.getParameter(CHAMP_DESCRIPTION);
         request.setAttribute(CHAMP_DESCRIPTION, description);
 
-        //Les données reçues sont multipart, on doit donc utiliser la méthode getPart() pour traiter le champ
-        // d'envoi de fichiers.
+        //Les données reçues sont multipart, on doit donc utiliser la méthode getPart() pour traiter le champ d'envoi de fichiers.
         Part part = request.getPart(CHAMP_FICHIER);
 
         // Il faut déterminer s'il s'agit d'un champ classique ou d'un champ de type fichier : on délègue cette opération
@@ -38,7 +38,6 @@ public class Upload extends HttpServlet {
             String nomChamp = part.getName();
             request.setAttribute(nomChamp, nomFichier);
         }
-
         this.getServletContext().getRequestDispatcher(VUE).forward(request, response);
     }
 
