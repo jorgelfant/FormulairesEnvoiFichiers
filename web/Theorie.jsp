@@ -309,6 +309,47 @@ mot-clé filename, afin de savoir si le champ traité est de type fichier ou non
 
 Lançons-nous, et implémentons un début de méthode doPost() dans notre servlet d'upload :
 
+
+
+
+                                 -----------------------------
+                                 methode doPost de Upload.java
+                                 ------------------------------
+
+
+
+
+Cette ébauche est assez commentée pour que vous puissiez comprendre son fonctionnement sans problème. À la ligne 16
+nous accédons au fragment correspondant au champ fichier du formulaire, puis nous analysons son en-tête pour déterminer
+s'il s'agit d'un champ de type fichier ou non.
+
+Je vous donne pour finir des précisions au sujet de la méthode utilitaire getNomFichier(). Je vous l'ai annoncé un peu
+plus tôt, l'en-tête HTTP lu est de la forme :
+
+                                 -----------------------------------------------------------
+                                 Content-Disposition: form-data; filename="nomdufichier.ext"
+                                 -----------------------------------------------------------
+
+Afin de sélectionner uniquement la valeur du paramètre filename, je réalise dans la méthode utilitaire :
+
+     * un part.getHeader( "content-disposition" ), afin de ne traiter que la ligne de l'en-tête concernant le
+       content-disposition. Par ailleurs, vous pouvez remarquer que la méthode ne prête aucune attention à la casse
+       dans l'argument que vous lui passez, c'est-à-dire aux éventuelles majuscules qu'il contient : que vous écriviez
+       "content-disposition", "Content-disposition" ou encore "Content-Disposition", c'est toujours le même en-tête HTTP
+       qui sera ciblé ;
+
+     * un split( ";" ), afin de distinguer les différents éléments constituant la ligne, séparés comme vous pouvez le
+       constater dans l'exemple d'en-tête ci-dessus par un ";" ;
+
+     * un startsWith( "filename" ), afin de ne sélectionner que la chaîne commençant par filename ;
+
+     * un substring(), afin de ne finalement sélectionner que la valeur associée au paramètre filename, contenue après
+       le caractère "=" .
+
+Avec tous ces détails, vous devriez comprendre parfaitement comment tout cela s'organise.
+
+Modifions alors notre JSP afin d'afficher les valeurs lues et stockées dans les attributs de requêtes description et
+fichier, que j'ai mis en place dans notre servlet :
 --%>
 
 </body>
