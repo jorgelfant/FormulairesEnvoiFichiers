@@ -350,6 +350,257 @@ Avec tous ces détails, vous devriez comprendre parfaitement comment tout cela s
 
 Modifions alors notre JSP afin d'afficher les valeurs lues et stockées dans les attributs de requêtes description et
 fichier, que j'ai mis en place dans notre servlet :
+
+                   ---------------------------------------------------------------
+                   <%@ page pageEncoding="UTF-8" %>
+                   <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+                   <!DOCTYPE html>
+                   <html>
+                       <head>
+                           <meta charset="utf-8" />
+                           <title>Envoi de fichier</title>
+                           <link type="text/css" rel="stylesheet" href="form.css">
+                       </head>
+                       <body>
+                           <form action="upload" method="post" enctype="multipart/form-data">
+                               <fieldset>
+                                   <legend>Envoi de fichier</legend>
+
+                                   <label for="description">Description du fichier</label>
+                                   <input type="text" id="description" name="description" value="" />
+                                   <span class="succes"><c:out value="${description}" /></span>
+                                   <br />
+
+
+                                   <label for="fichier">Emplacement du fichier <span class="requis">*</span></label>
+                                   <input type="file" id="fichier" name="fichier" />
+                                   <span class="succes"><c:out value="${fichier}" /></span>
+                                   <br />
+
+                                   <input type="submit" value="Envoyer" class="sansLabel" />
+                                   <br />
+                               </fieldset>
+                           </form>
+                       </body>
+                   </html>
+                   --------------------------------------------------------------------------------
+
+Je ne fais ici que réafficher le contenu des champs, à savoir le texte de description et le titre du fichier
+sélectionné par l'utilisateur, aux lignes 17 et 23. Je n'ai volontairement pas ajouté d'étapes de validation sur
+ces deux champs, afin de ne pas surcharger le code de ce chapitre inutilement. Après tout, vous savez déjà comment
+procéder : il suffit de suivre exactement le même principe que lorsque nous avions mis en place des validations sur
+les champs de nos formulaires d'inscription et de connexion dans les chapitres précédents.
+
+Nous pouvons dorénavant tester notre ébauche ! J'ai, pour ma part, précisé ces données dans mon formulaire, comme
+vous pouvez le constater à la figure suivante (à adapter à votre cas selon le fichier que vous allez choisir).
+
+
+
+Et j'ai obtenu ce résultat (voir la figure suivante).
+
+
+                              En fait il y a un bug sur internet explorer et le champ fichier
+                              s'affiche pas bien
+
+
+Pour ceux d'entre vous qui utilisent le navigateur Internet Explorer, vous allez obtenir un rendu sensiblement différent,
+comme vous pouvez le voir sur la figure suivante.
+
+
+************************************************************************************************************************
+
+Vous constatez que :
+
+      * le nom du fichier a correctement été extrait, mais est entouré de guillemets ;
+
+      * avec Internet Explorer, le nom du fichier contient en réalité le chemin complet du fichier sur la machine du client...
+
+Nous obtenons ici un bel exemple nous prouvant que la tambouille interne réalisée dans certains navigateurs peut imposer
+certaines spécificités ! La morale de l'histoire, c'est qu'il est primordial de tester le fonctionnement d'une application
+web sous différents navigateurs afin d'éviter ce genre de problèmes d'une plate-forme à une autre...
+
+Afin de pallier les différents petits soucis que nous venons de rencontrer, nous devons apporter quelques modifications
+à notre servlet.
+
+Dans le bloc if traitant le champ fichier, pour corriger le bug IE :
+
+                           ---------------------------------------------------------------------
+                            * Si la méthode a renvoyé quelque chose, il s'agit donc d'un champ
+                            * de type fichier (input type="file").
+                            */
+                           if ( nomFichier != null && !nomFichier.isEmpty() ) {
+                               String nomChamp = part.getName();
+
+                               /*
+                                * Antibug pour Internet Explorer, qui transmet pour une raison
+                                * mystique le chemin du fichier local à la machine du client...
+                                *
+                                * Ex : C:/dossier/sous-dossier/fichier.ext
+                                *
+                                * On doit donc faire en sorte de ne sélectionner que le nom et
+                                * l'extension du fichier, et de se débarrasser du superflu.
+                                */
+                               nomFichier = nomFichier.substring( nomFichier.lastIndexOf( '/' ) + 1 )
+                                       .substring( nomFichier.lastIndexOf( '\\' ) + 1 );
+
+                               request.setAttribute( nomChamp, nomFichier );
+                           }
+                         ------------------------------------------------------------------------
+
+Et dans la méthode utilitaire, à la ligne 17 pour retirer les guillemets superflus :
+
+                        ---------------------------------------------------------------------
+                         * Méthode utilitaire qui a pour unique but d'analyser l'en-tête
+                         * "content-disposition", et de vérifier si le paramètre "filename" y est
+                         * présent. Si oui, alors le champ traité est de type File et la méthode
+                         * retourne son nom, sinon il s'agit d'un champ de formulaire classique et
+                         * la méthode retourne null.
+                         */
+                        private static String getNomFichier( Part part ) {
+                            /* Boucle sur chacun des paramètres de l'en-tête "content-disposition". */
+                            for ( String contentDisposition : part.getHeader( "content-disposition" ).split( ";" ) ) {
+                                /* Recherche de l'éventuelle présence du paramètre "filename". */
+                                if ( contentDisposition.trim().startsWith( "filename" ) ) {
+                                    /*
+                                     * Si "filename" est présent, alors renvoi de sa valeur,
+                                     * c'est-à-dire du nom de fichier sans guillemets.
+                                     */
+                                    return contentDisposition.substring( contentDisposition.indexOf( '=' ) + 1 ).trim().replace( "\"", "" );
+                                }
+                            }
+                            /* Et pour terminer, si rien n'a été trouvé... */
+                            return null;
+                        }
+                       -------------------------------------------------------------------------
+
+Je vous laisse analyser ces deux petites corrections par vous-mêmes, il s'agit uniquement de bricolages sur les
+String qui posaient problème !
+
+Vous pouvez maintenant tester, et vérifier que vous obtenez le résultat indiqué à la figure suivante, peu importe
+le navigateur utilisé.
+
+************************************************************************************************************************
+                                      La différence entre la théorie et la pratique
+************************************************************************************************************************
+
+Dans le code de notre servlet, j'ai utilisé la méthode request.getParameter() pour accéder au contenu du champ description,
+qui est un simple champ de type texte. « Logique ! » vous dites-vous, nous avons toujours fait comme ça auparavant et
+il n'y a pas de raison pour que cela change ! Eh bien détrompez-vous...
+
+Comme je vous l'annonçais dans le court passage sur les moyens à mettre en place avec l'API servlet en version 2.x,
+avant la version 3.0 un appel à la méthode request.getParameter() renvoyait null dès lors que le type des données
+envoyées par un formulaire était multipart. Depuis la version 3.0, les spécifications ont changé et nous pouvons maintenant
+y trouver ce passage au sujet de l'envoi de fichiers :
+
+Citation : Spécifications de l'API servlet 3.0
+
+For parts with form-data as the Content-Disposition, but without a filename, the string value of the part will also be
+available via the getParameter / getParameterValues methods on HttpServletRequest, using the name of the part.
+
+Pour les non-anglophones, ce passage explicite noir sur blanc que lors de la réception de données issues d'un formulaire,
+envoyées avec le type multipart, la méthode request.getParameter() doit pouvoir être utilisée pour récupérer le contenu
+des champs qui ne sont pas des fichiers.
+
+************************************************************************************
+Et alors, où est le problème ? C'est bien ce que nous avons fait ici, n'est-ce pas ?
+************************************************************************************
+
+Le problème est ici relativement sournois. En effet, ce que nous avons fait fonctionne, mais uniquement parce que nous
+utilisons le serveur d'applications Tomcat 7 ! Alors qu'habituellement, Tomcat souffre de carences en comparaison à ses
+confrères comme GlassFish ou JBoss, il se distingue cette fois en respectant à la lettre ce passage de la norme.
+
+Par contre, le serveur considéré comme LA référence des serveurs d'applications Java EE - le serveur GlassFish 3 développé
+par Oracle - ne remplissait toujours pas cette fonctionnalité il y a quelques mois de ça ! En réalité, il se comportait
+toujours comme avec les anciennes versions de l'API, ainsi un appel à la méthode request.getParameter() retournait null...
+C'était plutôt étrange, dans la mesure où cette spécification de l'API servlet date tout de même de 2009 ! Heureusement,
+plus de deux ans après la première sortie de GlassFish en version 3, ce problème qui avait depuis été reporté comme un
+bug, a finalement été corrigé dans la dernière version 3.1.2 du serveur.
+
+Bref, vous comprenez maintenant mieux le titre de ce paragraphe : en théorie, tout est censé fonctionner correctement,
+mais dans la pratique ce n'est pas encore le cas partout, et selon le serveur que vous utilisez il vous faudra parfois
+ruser pour parvenir à vos fins.
+
+**********************************************************************************
+Du coup, comment faire sur un serveur qui ne respecte pas ce passage de la norme ?
+**********************************************************************************
+
+Eh bien dans un tel cas, il va falloir que nous récupérions nous-mêmes le contenu binaire de l'élément Part
+correspondant au champ de type texte, et le reconstruire sous forme d'un String. Appétissant n'est-ce pas ?
+
+Les explications qui suivent sont uniquement destinées à vous donner un moyen de récupérer les données contenues
+dans les champs classiques d'un formulaire de type multipart dans une application qui tournerait sur un serveur
+ne respectant pas le point des spécifications que nous venons d'étudier. Si vous n'êtes pas concernés, autrement
+dit si le serveur que vous utilisez ne présente pas ce bug, vous n'avez pas besoin de mettre en place ces modifications
+dans votre code, vous pouvez utiliser simplement request.getParameter() comme nous l'avons fait dans l'exemple
+jusqu'à présent.
+
+Ne vous inquiétez pas, nous avons déjà presque tout mis en place dans notre servlet, les modifications vont être
+minimes ! Dans notre code, nous disposons déjà d'une méthode utilitaire getNomfichier() qui nous permet de savoir si
+un élément Part concerne un champ de type fichier ou un champ classique. Le seul vrai travail va être de créer la méthode
+responsable de la reconstruction dont je viens de vous parler.
+
+------------------------------------------------------------------------------------------------------------------------
+
+public void doPost( HttpServletRequest request, HttpServletResponse response ) throws ServletException, IOException {
+    ...
+
+    Part part = request.getPart( CHAMP_FICHIER );
+
+    /* Il faut déterminer s'il s'agit d'un champ classique ou d'un champ de type fichier : on délègue cette opération
+       à une méthode utilitaire getNomFichier().
+
+    String nomFichier = getNomFichier( part );
+
+    if ( nomFichier == null ) {
+
+        /* La méthode a renvoyé null, il s'agit donc d'un champ classique ici (input type="text|radio|checkbox|etc", select, etc). */
+        String nomChamp = part.getName();
+
+        /* Récupération du contenu du champ à l'aide de notre nouvelle méthode */
+        String valeurChamp = getValeur( part );
+        request.setAttribute( nomChamp, valeurChamp );
+
+    } else if ( !nomFichier.isEmpty() ) {
+        /* La méthode a renvoyé quelque chose, il s'agit donc d'un champ de type fichier (input type="file"). */
+        ...
+    }
+    ...
+}
+
+ * Méthode utilitaire qui a pour unique but de lire l'InputStream contenu dans l'objet part, et de le convertir
+   en une banale chaîne de caractères.
+
+private String getValeur( Part part ) throws IOException {
+    BufferedReader reader = new BufferedReader( new InputStreamReader( part.getInputStream(), "UTF-8" ) );
+    StringBuilder valeur = new StringBuilder();
+    char[] buffer = new char[1024];
+
+    int longueur = 0;
+    while ( ( longueur = reader.read( buffer ) ) > 0 ) {
+        valeur.append( buffer, 0, longueur );
+    }
+    return valeur.toString();
+}
+------------------------------------------------------------------------------------------------------------------------
+
+La modification importante dans le code de la méthode doPost() est la décomposition de la vérification du retour
+de la méthode getNomFichier() en un if / else if. Si la méthode retourne null, alors nous savons que nous avons
+affaire à un champ classique, et nous devons alors récupérer son contenu avec la nouvelle méthode utilitaire getValeur()
+que nous venons de mettre en place.
+
+En ce qui concerne la méthode utilitaire en elle-même, encore une fois c'est du bricolage de flux et de String, rien de
+bien passionnant... du pur Java comme on l'aime chez nous !
+
+Cette nouvelle solution n'apporte aucune nouvelle fonctionnalité, mais offre l'avantage d'être multiplateforme, alors
+que le code de notre exemple précédent ne fonctionnait que sous certains serveurs. Au final, vous voyez que ce n'est pas
+si tordu, mais c'est quand même bien moins intuitif et agréable qu'en utilisant directement la méthode request.getParameter() :
+il est ici nécessaire de faire appel à la méthode getValeur() sur chaque champ de type texte dont les données sont
+envoyées à travers un formulaire de type multipart. Espérons que les quelques serveurs d’applications qui sont encore
+à la traîne comblent ce manque rapidement, afin que les développeurs comme vous et moi puissent se passer de cette
+tambouille peu ragoûtante. :o
+
+
+
 --%>
 
 </body>

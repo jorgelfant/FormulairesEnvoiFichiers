@@ -4,13 +4,12 @@
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
          version="4.0">
 
+
     <servlet>
         <servlet-name>Upload</servlet-name>
         <servlet-class>com.sdzee.servlets.Upload</servlet-class>
-        <!-- Pour commencer, nous devons compléter la déclaration de notre servlet dans le fichier web.xml avec
-             une section <multipart-config> afin de faire en sorte que la méthode getParts() fonctionne     -->
         <multipart-config>
-            <location>c:/fichiers</location>
+            <location>c:/folderTest</location>
             <max-file-size>10485760</max-file-size> <!-- 10 Mo -->
             <max-request-size>52428800</max-request-size> <!-- 5 x 10 Mo -->
             <file-size-threshold>1048576</file-size-threshold> <!-- 1 Mo -->
