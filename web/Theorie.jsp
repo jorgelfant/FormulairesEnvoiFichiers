@@ -688,9 +688,180 @@ sur le disque.
 
 Ceci fait, il ne nous reste plus qu'à mettre en place le tampon et à écrire notre fichier sur le disque. Voici la méthode
 complétée :
+------------------------------------------------------------------------------------------------------------------------
+                 BufferedInputStream entree = null;
+                 BufferedOutputStream sortie = null;
+
+                 try {
+                     // Ouvre les flux.
+                     entree = new BufferedInputStream(part.getInputStream(), TAILLE_TAMPON);
+                     sortie = new BufferedOutputStream(new FileOutputStream(new File(chemin + nomFichier)), TAILLE_TAMPON);
+
+                     // Lit le fichier reçu et écrit son contenu dans un fichier sur le disque.
+                     byte[] tampon = new byte[TAILLE_TAMPON];
+                     int longueur;
+                     //entree a le doc et entree.read(tampon)    >0 ou !=-1
+                     while ((longueur=entree.read(tampon)) > 0) {//Returns: the next byte of data, or -1 if the end of the stream is reached.
+                         sortie.write(tampon, 0, longueur);//Writes len bytes from the specified byte array starting at offset off to this buffered output stream.
+                     }
+                 } finally {//Dans tous les cas tu vas essayer de fermer la sortie et l'entree
+                     try {
+                         sortie.close();
+                     } catch (IOException ignore) {
+                     }
+                     try {
+                         entree.close();
+                     } catch (IOException ignore) {
+                     }
+                 }
+
+------------------------------------------------------------------------------------------------------------------------
+À l'aide d'un tableau d'octets jouant le rôle de tampon, la boucle ici mise en place parcourt le contenu du fichier
+reçu et l'écrit morceau par morceau dans le fichier créé sur le disque. Si vous n'êtes pas familiers avec la manipulation
+de fichiers en Java, ou si vous avez oublié comment cela fonctionne, vous pouvez jeter un œil à ce chapitre du cours de Java.
+
+****************************
+Test du formulaire d'upload
+****************************
+
+Il ne nous reste maintenant plus qu'à vérifier que tout se déroule correctement.
+
+Avec la configuration mise en place sur mon poste, fonctionnant sous Windows et Tomcat tournant sur le disque C:\,
+si je reprends les mêmes données que dans les exemples précédents, j'obtiens ce résultat (voir la figure suivante).
 
 
 
+
+
+Alors après validation, le répertoire C:\fichiers de mon disque contient bien une copie du fichier eclipse.ini,
+comme l'indique la figure suivante.
+
+
+
+
+
+
+Ça y est, vous êtes maintenant capables de récupérer des fichiers envoyés par vos utilisateurs !
+
+
+
+************************************************************************************************************************
+                                       Problèmes et limites
+************************************************************************************************************************
+Tout cela semble bien joli, mais nous allons un peu vite en besogne. En effet, plusieurs problématiques importantes
+se posent avec la solution mise en place :
+
+  1) nous ne gérons pas les fichiers de mêmes noms ;
+
+  2) nous ne savons pas éviter les doublons ;
+
+  3) nous n'avons pas réfléchi à l'endroit choisi pour le stockage.
+
+
+*********************************************
+1) Comment gérer les fichiers de mêmes noms ?
+*********************************************
+
+Le plus simple, c'est de toujours renommer les fichiers reçus avant de les enregistrer sur le disque.
+Tout un tas de solutions, que vous pouvez combiner, s'offrent alors à vous :
+
+     * ajouter un suffixe à votre fichier si un fichier du même nom existe déjà sur le disque ;
+
+     * placer vos fichiers dans des répertoires différents selon leur type ou leur extension ;
+
+     * renommer, préfixer ou suffixer vos fichiers par un timestamp ;
+
+     * vous baser sur un hashCode du contenu binaire du fichier pour générer une arborescence et un nom unique ;
+
+     * etc.
+
+À vous de définir quelle(s) solution(s) convien(nen)t le mieux aux contraintes de votre projet.
+
+*********************************************
+2) Comment éviter les doublons ?
+*********************************************
+
+Là, il s'agit plus d'une optimisation que d'un réel problème. Mais effectivement, si votre application est vouée à
+être massivement utilisée, vous pourriez éventuellement juger intéressant d'économiser un peu d'espace disque sur
+votre serveur en ne réenregistrant pas un fichier qui existe déjà sur le disque. Autrement dit, faire en sorte que
+si un utilisateur envoie un fichier qu'un autre utilisateur a déjà envoyé par le passé, votre application sache le
+reconnaître rapidement et agir en conséquence.
+
+Comme vous devez vous en douter, c'est un travail un peu plus ardu que la simple gestion des fichiers de mêmes noms que nous venons d'aborder. Toutefois, une des solutions précédentes peut convenir : en vous basant sur un hashCode du contenu binaire du fichier pour générer une arborescence et un nom unique, vous pouvez ainsi à la fois vous affranchir du nom que l'utilisateur a donné à son fichier, et vous assurer qu'un contenu identique ne sera pas dupliqué à deux endroits différents sur votre disque.
+
+Exemple :
+
+    1) un utilisateur envoie un fichier nommé pastèque.jpg ;
+
+    2) votre application le reçoit, et génère un hashCode basé sur son contenu, par exemple a8cb45e3d6f1dd5e ;
+
+    3) elle stocke alors le fichier dans l'arborescence /a8cb/45e3/d6f1/dd5e.jpg, construite à partir du hashCode ;
+
+    4) un autre utilisateur envoie plus tard un fichier nommé watermelon.jpg, dont le contenu est exactement identique
+       au précédent fichier ;
+
+    5) votre application le reçoit, et génère alors le même hashCode que précédemment, puisque le contenu est identique ;
+
+    6) elle se rend alors compte que l'arborescence /a8cb/45e3/d6f1/dd5e.jpg existe déjà, et saute l'étape d'écriture sur le disque.
+
+Bien évidemment cela demande un peu de réflexion et d'ajustements. Il faudrait en effet générer un hashCode qui soit
+absolument unique : si deux contenus différents peuvent conduire au même hashCode, alors ce système ne fonctionne plus !
+Mais c'est une piste sérieuse qui peut, si elle est bien développée, remplir la mission sans accrocs.
+
+
+*********************************************
+3) Où stocker les fichiers reçus ?
+*********************************************
+
+C'est en effet une bonne question, qui mérite qu'on s'y attarde un instant. A priori, deux possibilités s'offrent à nous :
+
+  * stocker les fichiers au sein de l'application web, dans un sous-répertoire du dossier WebContent d'Eclipse par exemple ;
+
+  * stocker les fichiers en dehors de l'application, dans un répertoire du disque local.
+
+Vous avez ici aveuglément suivi mes consignes, et ainsi implémenté la seconde option. En effet, dans l'exemple
+j'ai bien enregistré le fichier dans un répertoire placé à la racine de mon disque local. Mais vous devez vous rendre
+compte que cette solution peut poser un problème important : tous les fichiers placés en dehors de l'application,
+un peu à la manière des fichiers placés sous son répertoire /WEB-INF, sont invisibles au contexte web, c'est-à-dire
+qu'ils ne sont pas accessibles directement via une URL. Autrement dit, vous ne pourrez pas proposer aux utilisateurs
+de télécharger ces fichiers !
+
+Dans ce cas, pourquoi ne pas avoir opté pour la première solution ? o_O
+***********************************************************************
+
+Eh bien tout simplement parce que si elle a l'avantage de pouvoir rendre disponibles les fichiers directement aux
+utilisateurs, puisque tout fichier placé sous la racine d'une application est accessible directement via une URL,
+elle présente un autre inconvénient : en stockant les fichiers directement dans le conteneur de votre application,
+vous les rendez vulnérables à un écrasement lors d'un prochain redémarrage serveur ou d'un prochain redéploiement de
+l'application.
+
+Vous en apprendrez plus à ce sujet dans les annexes du cours, contentez-vous pour le moment de retenir la pratique qui
+découle de ces contraintes : il est déconseillé de stocker les fichiers uploadés par les utilisateurs dans le conteneur.
+
+Mais alors, comment faire pour rendre nos fichiers externes disponibles au téléchargement ?
+*******************************************************************************************
+
+La réponse à cette question nécessite un peu de code et d'explications, et vous attend dans le chapitre suivant !
+
+***************************************
+Rendre le tout entièrement automatique
+***************************************
+
+Dans le cas d'un petit formulaire comme celui de notre exemple, tout va bien. Nous sommes là pour apprendre, nous avons
+le temps de perdre notre temps ( :D ) à développer des méthodes utilitaires et à réfléchir à des solutions adaptées.
+Mais dans une vraie application, des formulaires qui contiennent des champs de type fichier, vous risquez d'en rencontrer
+plus d'un ! Et vous allez vite déchanter quand vous aurez à créer toutes les servlets responsables des traitements...
+
+L'idéal, ça serait de pouvoir continuer à utiliser les méthodes request.getParameter() comme si de rien n'était !
+Eh bien pour cela, pas de miracle, il faut mettre en place un filtre qui va se charger d'effectuer les vérifications
+et conversions nécessaires, et qui va rendre disponible le contenu des fichiers simplement. C'est un travail conséquent
+et plutôt difficile. Plutôt que de vous faire coder le tout à partir de zéro, je vais vous laisser admirer la superbe
+classe présentée dans cet excellent article. C'est en anglais, mais le code est extrêmement clair et professionnel,
+essayez d'y jeter un œil et de le comprendre
+
+************************************************************************************************************************
+                                              INTEGRATION DANS MVC
+************************************************************************************************************************
 
 --%>
 

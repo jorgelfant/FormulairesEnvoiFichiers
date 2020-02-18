@@ -83,6 +83,15 @@ public class Upload extends HttpServlet {
         // Prépare les flux.
         BufferedInputStream entree = null;
         BufferedOutputStream sortie = null;
+        // BufferedInputStream no es abstracta, es una clase concreta, por tanto puedes crear instancias de esta clase.
+        // Su método read devuelve un byte de a cada vez pero mantiene un buffer donde va acumulando los bytes internamente.
+        // Así la función read(), lee byte a byte de forma que se puede hacer algun tipo de bucle.
+
+        // int read(byte[] b, int off, int len)
+        // b, buffer sobre el que dejaremos los bytes resultado de la lectura.
+        // off, indica la posición del buffer en la cual se almacenarán los bytes leídos.
+        // len, número de bytes a leer.
+
         try {
             // Ouvre les flux.
             entree = new BufferedInputStream(part.getInputStream(), TAILLE_TAMPON);
@@ -91,9 +100,9 @@ public class Upload extends HttpServlet {
             // Lit le fichier reçu et écrit son contenu dans un fichier sur le disque.
             byte[] tampon = new byte[TAILLE_TAMPON];
             int longueur;
-
-            while ((longueur = entree.read(tampon)) > 0) {
-                sortie.write(tampon, 0, longueur);
+            //entree a le doc et entree.read(tampon)    >0 ou !=-1
+            while ((longueur=entree.read(tampon)) > 0) {//Returns: the next byte of data, or -1 if the end of the stream is reached.
+                sortie.write(tampon, 0, longueur);//Writes len bytes from the specified byte array starting at offset off to this buffered output stream.
             }
         } finally {//Dans tous les cas tu vas essayer de fermer la sortie et l'entree
             try {
@@ -107,3 +116,42 @@ public class Upload extends HttpServlet {
         }
     }
 }
+/* EJEMPLO PARECIDO A      private void ecrireFichier(Part part, String nomFichier, String chemin) throws IOException {
+   QUE ENCONTRE EN INTERNET, la particularidad es a notar en el try catch de los inuts outputs
+
+class MostrarArchivo {
+    public static void main(String[] args) {
+          int i;
+          //fin es inicalizado como nulo
+          FileInputStream fin=null;
+         //Primero asegúrese de que haya especificado un archivo
+         if (args.length!=1){
+             System.out.println("Uso: MostrarArchivo.");
+             return;
+         }
+        //El siguiente código abre un archivo,
+        // lee caracteres hasta que se encuentra el EOF,
+        // y luego cierra el archivo a través de un bloque finally.
+        // EOF es un concepto para determinar el final de un archivo
+         try {
+             fin=new FileInputStream(args[0]);
+             do {
+                 i=fin.read();
+                 if (i !=-1) System.out.print((char)i);
+             }while (i!=-1); //Cuando i es igual a -1, se ha alcanzado el final del archivo
+         }catch (FileNotFoundException exc){
+             System.out.println("Archivo no encontrado");
+         }catch (IOException exc){
+             System.out.println("Ha ocurrido un error de E/S");
+         }finally {
+             //Cerrar archivo en todos los casos
+             try{
+                 //Cierra fin sólo si no es nulo
+                 if (fin!=null) fin.close();
+             }catch (IOException exc){
+                 System.out.println("Error al cerrar archivo.");
+             }
+         }
+    }
+}
+*/
