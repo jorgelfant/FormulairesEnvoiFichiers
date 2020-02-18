@@ -600,6 +600,62 @@ envoyées à travers un formulaire de type multipart. Espérons que les quelques
 tambouille peu ragoûtante. :o
 
 
+************************************************************************************************************************
+                                        Enregistrement du fichier
+************************************************************************************************************************
+
+Maintenant que nous sommes capables de récupérer les données envoyées depuis notre formulaire, nous pouvons nous attaquer
+à la gestion du fichier en elle-même : la lecture du fichier envoyé et son écriture sur le disque !
+
+*****************************
+Définition du chemin physique
+*****************************
+
+Commençons par définir un nom de répertoire physique dans lequel nous allons écrire nos fichiers sur le disque.
+Rappelez-vous : le chemin que nous avons précisé dans le champ <location> de la section <multipart-config> est uniquement
+utilisé par l'API servlet pour stocker les fichiers de manière temporaire. Ce chemin ne sera pas récupérable ailleurs,
+et donc pas réutilisable.
+
+Il y a plusieurs solutions possibles ici : nous pouvons nous contenter d'écrire en dur le chemin dans une constante
+directement au sein de notre servlet, ou encore mettre en place un fichier Properties dans lequel nous préciserons le
+chemin. Dans notre exemple, nous allons utiliser un autre moyen : nous allons passer le chemin à notre servlet via un
+paramètre d’initialisation. Si vous vous souvenez d'un de nos tout premiers chapitres, celui où nous avons découvert la
+servlet, vous devez également vous souvenir des options de déclaration d'une servlet dans le fichier web.xml, notamment
+d'un bloc nommé <init-param>. C'est celui-ci que nous allons mettre en place dans la déclaration de notre servlet d'upload
+
+                          ----------------------------------------------------------------------
+                                  <servlet>
+                                 	<servlet-name>Upload</servlet-name>
+                                 	<servlet-class>com.sdzee.servlets.Upload</servlet-class>
+
+                                 	<init-param>
+                                 		<param-name>chemin</param-name>
+                                 		<param-value>/fichiers/</param-value>
+                                 	</init-param>
+
+                                 	<multipart-config>
+                                 		<location>c:/fichiers</location>
+                                 		<max-file-size>10485760</max-file-size> <!-- 10 Mo -->
+                                 		<max-request-size>52428800</max-request-size> <!-- 5 x 10 Mo -->
+                                 		<file-size-threshold>1048576</file-size-threshold> <!-- 1 Mo -->
+                                 	</multipart-config>
+                                 </servlet>
+************************************************************************************************************************
+
+En procédant ainsi, notre servlet va pouvoir accéder à un paramètre nommé chemin, disponible à travers la méthode
+getInitParameter() de l'objet ServletConfig !
+
+**********************************
+Écriture du fichier sur le disque
+**********************************
+
+Reprenons maintenant notre servlet pour y récupérer ce fameux chemin, et mettre en place proprement l'ouverture
+des flux dans une méthode dédiée à l'écriture du fichier :
+
+
+
+ALLER REGARDER DANS LA SERVLET
+
 
 --%>
 

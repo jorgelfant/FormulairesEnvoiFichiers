@@ -1,6 +1,6 @@
 package com.sdzee.servlets;
 
-import java.io.IOException;
+import java.io.*;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -11,9 +11,12 @@ import javax.servlet.http.Part;
 public class Upload extends HttpServlet {
 
     public static final String VUE = "/WEB-INF/upload.jsp";
-
+    //----------------------------------------------------------
     public static final String CHAMP_DESCRIPTION = "description";
     public static final String CHAMP_FICHIER = "fichier";
+    //----------------------------------------------------------
+    public static final String CHEMIN = "chemin";
+    public static final int TAILLE_TAMPON = 10240; // 10 ko
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         /* Affichage de la page d'envoi de fichiers */
@@ -23,7 +26,11 @@ public class Upload extends HttpServlet {
     //------------------------------------------------------------------------------------------------------------------
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-        /* Récupération du contenu du champ de description */
+
+        // Lecture du paramètre 'chemin' passé à la servlet via la déclaration dans le web.xml
+        String chemin = this.getServletConfig().getInitParameter(CHEMIN);
+
+        // Récupération du contenu du champ de description
         String description = request.getParameter(CHAMP_DESCRIPTION);
         request.setAttribute(CHAMP_DESCRIPTION, description);
 
@@ -46,6 +53,9 @@ public class Upload extends HttpServlet {
             nomFichier = nomFichier.substring(nomFichier.lastIndexOf('/') + 1)
                     .substring(nomFichier.lastIndexOf('\\') + 1);
 
+            // Écriture du fichier sur le disque
+            ecrireFichier(part, nomFichier, chemin);
+
             request.setAttribute(nomChamp, nomFichier);
         }
         this.getServletContext().getRequestDispatcher(VUE).forward(request, response);
@@ -67,4 +77,30 @@ public class Upload extends HttpServlet {
         // Et pour terminer, si rien n'a été trouvé...
         return null;
     }
+    //------------------------------------------------------------------------------------------------------------------
+    // Méthode utilitaire qui a pour but d'écrire le fichier passé en paramètre sur le disque, dans le répertoire
+    // donné et avec le nom donné.
+
+    private void ecrireFichier(Part part, String nomFichier, String chemin) throws IOException {
+        /* Prépare les flux. */
+        BufferedInputStream entree = null;
+        BufferedOutputStream sortie = null;
+        try {
+            /* Ouvre les flux. */
+            entree = new BufferedInputStream(part.getInputStream(), TAILLE_TAMPON);
+            sortie = new BufferedOutputStream(new FileOutputStream(new File(chemin + nomFichier)), TAILLE_TAMPON);
+
+            /* ... */
+        } finally {
+            try {
+                sortie.close();
+            } catch (IOException ignore) {
+            }
+            try {
+                entree.close();
+            } catch (IOException ignore) {
+            }
+        }
+    }
+
 }
