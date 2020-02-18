@@ -654,7 +654,42 @@ des flux dans une méthode dédiée à l'écriture du fichier :
 
 
 
-ALLER REGARDER DANS LA SERVLET
+                                         ALLER REGARDER DANS LA SERVLET
+
+  il y a une vouvelle methode  private void ecrireFichier(Part part, String nomFichier, String chemin) throws IOException
+  on recuperer le init-param de web.xml  avec String chemin = this.getServletConfig().getInitParameter(CHEMIN);
+   // Écriture du fichier sur le disque
+            ecrireFichier(part, nomFichier, chemin);
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+Ici, nous pourrions très bien utiliser directement les flux de type InputStream et FileOutputStream, mais les objets
+BufferedInputStream et BufferedOutputStream permettent, via l'utilisation d'une mémoire tampon, une gestion plus souple
+de la mémoire disponible sur le serveur :
+
+dans le flux entree, il nous suffit de récupérer le flux directement depuis la méthode getInputStream() de l'objet Part.
+Nous décorons ensuite ce flux avec un BufferedInputStream, avec ici dans l'exemple un tampon de 10 ko ;
+
+dans le flux sortie, nous devons mettre en place un fichier sur le disque, en vue d'y écrire ensuite le contenu de
+l'entrée. Nous décorons ensuite ce flux avec un BufferedOutputStream, avec ici dans l'exemple un tampon de 10 ko.
+
+Si j'ai pris la peine de vous détailler l'ouverture des flux, c'est pour que vous remarquiez ici la bonne pratique
+mise en place, que je vous recommande de suivre dès lors que vous manipulez des flux : toujours ouvrir les flux dans
+un bloc try, et les fermer dans le bloc finally associé. Ainsi, nous nous assurons, quoi qu'il arrive, que la fermeture
+de nos flux sera bien effectuée !
+
+Note à propos du chemin utilisé : il représente le répertoire du disque local sur lequel les fichiers vont être écrits.
+Par exemple, si votre serveur tourne sur le disque C:\ d'une machine sous Windows, alors le chemin /fichiers/ fera
+référence au répertoire C:\fichiers\. Ainsi, contrairement au champ <location> abordé un peu plus tôt dans lequel vous
+deviez écrire un chemin complet, vous pouvez ici spécifier un chemin relatif au système. Même remarque toutefois, vous
+devez vous assurer que ce répertoire existe, sinon Tomcat enverra une java.io.IOException lors de la tentative d'écriture
+sur le disque.
+
+Ceci fait, il ne nous reste plus qu'à mettre en place le tampon et à écrire notre fichier sur le disque. Voici la méthode
+complétée :
+
+
 
 
 --%>
