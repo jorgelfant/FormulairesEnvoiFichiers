@@ -46,6 +46,7 @@ public final class UploadForm {
         // nous l'avions fait dans notre servlet auparavant.
         String nomFichier = null;
         InputStream contenuFichier = null;
+
         try {
             Part part = request.getPart(CHAMP_FICHIER);
             // Il faut déterminer s'il s'agit bien d'un champ de type fichier : on délègue cette opération à la méthode
@@ -83,10 +84,8 @@ public final class UploadForm {
         } catch (ServletException e) {
             // Exception retournée si la requête n'est pas de type multipart/form-data. Cela ne peut arriver que si l'utilisateur
             // essaie de contacter la servlet d'upload par un formulaire différent de celui qu'on lui propose... pirate !
-
             e.printStackTrace();
-            setErreur(CHAMP_FICHIER,
-                    "Ce type de requête n'est pas supporté, merci d'utiliser le formulaire prévu pour envoyer votre fichier.");
+            setErreur(CHAMP_FICHIER, "Ce type de requête n'est pas supporté, merci d'utiliser le formulaire prévu pour envoyer votre fichier.");
         }
 
         // Si aucune erreur n'est survenue jusqu'à présent

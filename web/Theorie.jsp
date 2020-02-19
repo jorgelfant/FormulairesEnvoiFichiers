@@ -916,6 +916,110 @@ causer des exceptions bien particulières. Je vous donne le code pour commencer,
 dans le package com.sdzee.forms, et nous en reparlons ensuite. Ne paniquez pas s'il vous semble massif, plus de la
 moitié des lignes sont des commentaires destinés à vous en faciliter la compréhension ! ;)
 
+
+
+                                   VOIR UploadForm.java
+
+
+************************************************************************************************************************
+Sans surprise, dans ce code vous retrouvez bien :
+
+    * les méthodes utilitaires ecrireFichier() et getNomFichier(), que nous avions développées dans notre servlet ;
+
+    * l'analyse des éléments de type Part que nous avions mis en place là encore dans notre servlet, pour retrouver le champ
+      contenant le fichier ;
+
+    * l'architecture que nous avions mise en place dans nos anciens objets métiers dans les systèmes d'inscription et de
+      connexion. Notamment la Map erreurs, la chaîne resultat, les méthodes getValeurChamp() et setErreur(), ainsi que la
+      grosse méthode centrale ici nommée enregistrerFichier(), qui correspond à la méthode appelée depuis la servlet pour
+      effectuer les traitements.
+
+Comme vous pouvez le constater, la seule différence notoire est le nombre de blocs try / catch qui interviennent, et
+le nombre de vérifications de la présence d'erreurs. À propos, je ne me suis pas amusé à vérifier trois fois de
+suite - aux lignes 109, 128 et 138 - si des erreurs avaient eu lieu au cours du processus ou non. C'est simplement afin
+d'éviter de continuer inutilement le processus de validation si des problèmes surviennent lors des traitements précédents,
+et également afin de pouvoir renvoyer un message d'erreur précis à l'utilisateur.
+
+Enfin, vous remarquerez pour finir que j'ai modifié légèrement la méthode utilitaire ecrireFichier(), et que je lui
+passe désormais le contenu de type InputStream renvoyé par la méthode part.getInputStream(), et non plus directement
+l'élément Part. En procédant ainsi je peux m'assurer, en amont de la demande d'écriture sur le disque, si le contenu
+existe et est bien manipulable par notre méthode utilitaire.
+
+
+************************************************************************************************************************
+                                         REPRISE DE LA SERVLET
+************************************************************************************************************************
+
+C'est ici un petit travail de simplification, nous devons nettoyer le code de notre servlet pour qu'elle remplisse
+uniquement un rôle d'aiguilleur :
+
+
+
+                                    ON MODIFIE LA SERVLET
+
+
+
+L'unique différence avec les anciennes servlets d'inscription et de connexion se situe dans l'appel à la méthode
+centrale de l'objet métier. Cette fois, nous devons lui passer un argument supplémentaire en plus de l'objet request :
+le chemin physique de stockage des fichiers sur le disque local, que nous récupérons - souvenez-vous - via le paramètre
+d’initialisation défini dans le bloc <init-param> de la déclaration de la servlet.
+
+***************************************************************
+Adaptation de la page JSP aux nouvelles informations transmises
+***************************************************************
+
+Pour terminer, il faut modifier légèrement le formulaire pour qu'il affiche les erreurs que nous gérons dorénavant
+grâce à notre objet métier. Vous connaissez le principe, cela reprend là encore les mêmes concepts que ceux que nous
+avions mis en place dans nos systèmes d'inscription et de connexion :
+
+
+
+                                            upload.jsp
+
+
+**********************************
+Comportement de la solution finale
+**********************************
+
+Vous pouvez maintenant tester votre formulaire sous toutes ses coutures : envoyez des champs vides ou mal renseignés,
+n'envoyez qu'un champ sur deux, envoyez un fichier trop gros, configurez votre servlet pour qu'elle enregistre les
+fichiers dans un dossier qui n'existe pas sur votre disque, etc.
+
+Dans le désordre, voici aux figures suivantes un aperçu de quelques rendus que vous devriez obtenir dans différents
+cas d'échecs.
+
+                          Envoi sans description ni fichier
+
+
+
+                          Envoi d'un fichier trop lourd
+
+
+
+                          Envoi avec une description trop courte et pas de fichier
+
+
+Ne prenez pas cette dernière étape à la légère : prenez le temps de bien analyser tout ce qui est géré par notre
+objet métier, et de bien tester le bon fonctionnement de la gestion du formulaire. Cela vous aidera à bien assimiler
+tout ce qui intervient dans l'application, ainsi que les relations entre ses différents composants.
+
+       * Pour envoyer un fichier depuis un formulaire, il faut utiliser une requête de type multipart via
+         <form ... enctype="multipart/form-data">.
+
+       * Pour récupérer les données d'une telle requête depuis le serveur, l'API Servlet 3.0 fournit la méthode
+         request.getParts().
+
+       * Pour rendre disponible cette méthode dans une servlet, il faut compléter sa déclaration dans le fichier
+         web.xml avec une section <multipart-config>.
+
+       * Pour vérifier si une Part contient un fichier, il faut vérifier son type en analysant son en-tête Content-Disposition.
+
+       * Pour écrire le contenu d'un tel fichier sur le serveur, il suffit ensuite de récupérer le flux via la méthode
+         part.getInputStream() et de le manipuler comme on manipulerait un fichier local.
+
+       * Lors de la sauvegarde de fichiers sur un serveur, il faut penser aux contraintes imposées par le web :
+         noms de fichiers identiques, contenus de fichiers identiques, faux fichiers, etc.
+
 --%>
 
 </body>
