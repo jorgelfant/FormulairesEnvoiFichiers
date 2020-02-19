@@ -863,6 +863,59 @@ essayez d'y jeter un œil et de le comprendre
                                               INTEGRATION DANS MVC
 ************************************************************************************************************************
 
+Nous avons déjà fourni beaucoup d'efforts, mais il nous reste encore une étape importante à franchir: nous devons encore
+intégrer ce que nous venons de mettre en place dans notre architecture MVC. Nous l'avons déjà fait avec le formulaire
+d'inscription et de connexion, vous devez commencer à être habitués ! Il va nous falloir :
+
+    * créer un bean représentant les données manipulées, en l'occurrence il s'agit d'un fichier et de sa description ;
+
+    * créer un objet métier qui regroupe les traitements jusqu'à présent réalisés dans la servlet ;
+
+    * en profiter pour y ajouter des méthodes de validation de la description et du fichier, et ainsi permettre une
+      gestion fine des erreurs et exceptions ;
+
+    * reprendre la servlet pour l'adapter aux objets du modèle fraîchement créés ;
+
+    * modifier la page JSP pour qu'elle récupère les nouvelles informations qui lui seront transmises.
+
+************************************************************************************************************************
+
+Le plus gros du travail va se situer dans l'objet métier responsable des traitements et validations. C'est là que nous
+allons devoir réfléchir un petit peu, afin de trouver un moyen efficace pour gérer toutes les exceptions possibles lors
+de la réception de données issues de notre formulaire. Sans plus attendre, voici les codes commentés et expliqués...
+
+*****************************************
+Création du bean représentant un fichier
+*****************************************
+
+Commençons par le plus simple. Un fichier étant représenté par son nom et sa description, nous avons uniquement besoin
+d'un bean que nous allons nommer Fichier, qui contiendra deux propriétés et que nous allons placer comme ses confrères
+dans le package com.sdzee.beans :
+
+
+
+
+
+
+******************************************************************
+ Création de l'objet métier en charge du traitement du formulaire
+******************************************************************
+
+Arrivés là, les choses se compliquent un peu pour nous :
+
+  * pour assurer la validation des champs, nous allons simplement vérifier que le champ description est renseigné et
+    qu'il contient au moins 15 caractères, et nous allons vérifier que le champ fichier existe bien et contient bien
+    des données ;
+
+  * pour assurer la gestion des erreurs, nous allons, comme pour nos systèmes d'inscription et de connexion, initialiser
+    une Map d'erreurs et une chaîne contenant le résultat final du processus.
+
+La difficulté va ici trouver sa source dans la gestion des éventuelles erreurs qui peuvent survenir. À la différence
+de simples champs texte, la manipulation d'un fichier fait intervenir beaucoup de composants différents, chacun pouvant
+causer des exceptions bien particulières. Je vous donne le code pour commencer, celui de l'objet métier UploadForm placé
+dans le package com.sdzee.forms, et nous en reparlons ensuite. Ne paniquez pas s'il vous semble massif, plus de la
+moitié des lignes sont des commentaires destinés à vous en faciliter la compréhension ! ;)
+
 --%>
 
 </body>
